@@ -1,9 +1,9 @@
 -- Organization related transactions:
 
 -- 1. Approve an organizer to manage a specific event.
-
-BEGIN;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
+
 SELECT * FROM event WHERE event_id = 1 FOR UPDATE;
 SELECT * FROM application_history WHERE event_id = 1 FOR UPDATE;
 
@@ -23,8 +23,8 @@ COMMIT;
 
 -- 2. Issue event payments to organizers after successful event completion.
 
-BEGIN;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
 SELECT * FROM event WHERE event_id = 1 FOR UPDATE;
 
 -- Create transaction record
@@ -39,8 +39,8 @@ COMMIT;
 
 -- 3. Reserve tickets subject to event-specific reservation limits.
 
-BEGIN;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
 SELECT * FROM ticket WHERE ticket_id = 2 FOR UPDATE;
 INSERT INTO ticket (ticket_id, price, status, generated_at, event_id, seat_id) VALUES (2, 400.00, 'Available', '2026-07-15 23:59:59', 1, 2);
 
@@ -54,8 +54,8 @@ COMMIT;
 
 -- 4. Complete ticket bookings through initial payments.
 
-BEGIN;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
 SELECT * FROM ticket WHERE ticket_id = 1 FOR UPDATE;
 SELECT * FROM reservation_history WHERE ticket_id = 1 FOR UPDATE;
 
@@ -78,8 +78,8 @@ COMMIT;
 
 -- 5. Purchase tickets listed for resale by other buyers.
 
-BEGIN;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
 SELECT * FROM ticket WHERE ticket_id = 1 FOR UPDATE;
 SELECT * FROM resale_listing_history WHERE ticket_id = 1 FOR UPDATE;
 
