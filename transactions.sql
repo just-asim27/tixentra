@@ -68,7 +68,7 @@ INSERT INTO initial_payment (transaction_id, organization_id, user_id, ticket_id
 UPDATE reservation_history SET status = 'Converted' WHERE user_id = 1 AND ticket_id = 1;
 
 -- Create ownership record
-insert into ownership_history values(6,1,'2026-07-19 23:59:59','2026-07-27 13:59:59','true');
+INSERT INTO ownership_history (user_id, ticket_id, owned_from, owned_until, is_current) VALUES (1,1,'2026-07-19 23:59:59',Null,'true');
 
 -- Mark ticket as sold
 UPDATE ticket SET status = 'Sold' WHERE ticket_id = 1;
@@ -80,7 +80,7 @@ COMMIT;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 BEGIN;
 SELECT * FROM resale_listing_history WHERE ticket_id = 1 FOR UPDATE;
-
+SELECT * FROM ownership_history WHERE user_id = 1 AND ticket_id = 1 FOR UPDATE;
 -- Create transaction record
 INSERT INTO transaction (transaction_id, amount, payment_method, date_time, payment_status) VALUES (7, 450.00, 'Card', DEFAULT, 'Completed');
 
@@ -88,6 +88,7 @@ INSERT INTO transaction (transaction_id, amount, payment_method, date_time, paym
 INSERT INTO resale_payment (transaction_id, organization_amount, seller_amount, organization_id, ticket_id, buyer_id, seller_id) VALUES (7, 45.00, 405.00, 1, 1, 2, 1);
 
 -- Transfer ticket ownership
+UPDATE ownership_history SET owned_from = DEFAULT AND is_current = FALSE where user_id = 1 AND ticket_id = 1;
 INSERT INTO ownership_history (user_id, ticket_id, owned_from, owned_until, is_current) VALUES (2, 1, DEFAULT, NULL, TRUE);
 
 -- Mark resale listing as sold
