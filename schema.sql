@@ -12,10 +12,10 @@ CREATE TABLE organizer (
 
     CHECK (dob < CURRENT_DATE),
     CHECK (TRIM(name) != ''),
-    CHECK (TRIM(email) != ''),
+    CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
     CHECK (TRIM(password) != ''),
-    CHECK (TRIM(national_id) != ''),
-    CHECK (TRIM(phone) != '')
+    CHECK (national_id ~ '^[1-8]\d{4}-\d{7}-\d{1}$'),
+    CHECK (phone ~ '^03\d{2}-\d{7}$')
 );
 
 -- 2. Buyer Table
@@ -32,10 +32,10 @@ CREATE TABLE buyer (
 
     CHECK (dob < CURRENT_DATE),
     CHECK (TRIM(name) != ''),
-    CHECK (TRIM(email) != ''),
+    CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
     CHECK (TRIM(password) != ''),
-    CHECK (TRIM(national_id) != ''),
-    CHECK (TRIM(phone) != '')
+    CHECK (national_id ~ '^[1-8]\d{4}-\d{7}-\d{1}$'),
+    CHECK (phone ~ '^03\d{2}-\d{7}$')
 );
 
 -- 3. Organization Table
@@ -53,12 +53,12 @@ CREATE TABLE organization (
     address VARCHAR(255) NOT NULL,
 
     CHECK (TRIM(name) != ''),
-    CHECK (TRIM(email) != ''),
-    CHECK (TRIM(phone) != ''),
+    CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CHECK (phone ~ '^03\d{2}-\d{7}$'),
     CHECK (TRIM(password) != ''),
-    CHECK (url IS NULL OR TRIM(url) != ''),
+    CHECK (url IS NULL OR url ~ '^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(/\S*)?$'),
     CHECK (TRIM(owner) != ''),
-    CHECK (TRIM(registration_no) != ''),
+    CHECK (registration_no ~ '^\d{7}$'),
     CHECK (TRIM(address) != '')
 );
 
