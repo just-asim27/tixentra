@@ -113,7 +113,9 @@ CREATE TABLE seat (
         )
     ),
     
-    FOREIGN KEY (venue_id) REFERENCES venue(venue_id)
+    FOREIGN KEY (venue_id) REFERENCES venue(venue_id),
+
+    UNIQUE (venue_id, row, number)   -- Prevents duplicate seat rows for the same physical seat.
 );
 
 -- 6. Event Table
@@ -376,7 +378,9 @@ CREATE TABLE ticket (
             'Reserved',
             'Sold'
         )
-    )
+    ),
+
+    UNIQUE (event_id, seat_id)   -- Prevents the same seat being ticketed twice for the same event.
 );
 
 -- 17. Transaction Table
@@ -549,7 +553,9 @@ CREATE TABLE buyer_review (
     CHECK (
         revised_at IS NULL
         OR revised_at >= created_at
-    )    
+    ),
+
+    UNIQUE (user_id, event_id)   -- One review per buyer per event    
 );
 
 -- 23. Organization Review Table
@@ -583,7 +589,9 @@ CREATE TABLE organization_review (
     CHECK (
         revised_at IS NULL
         OR revised_at >= created_at
-    )        
+    ), 
+
+    UNIQUE (user_id, event_id, organization_id)  -- One review per organizer per event per organization     
 );
 
 -- 24. Reservation History Table
