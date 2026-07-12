@@ -1,3 +1,5 @@
+-- 1. Event related disjoint ensurement triggers
+
 CREATE OR REPLACE FUNCTION check_theater_disjoint() RETURNS TRIGGER AS $$
 BEGIN
     IF (SELECT COUNT(*) FROM sports WHERE event_id = NEW.event_id) > 0
@@ -41,6 +43,8 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_concert_disjoint
 BEFORE INSERT ON concert
 FOR EACH ROW EXECUTE FUNCTION check_concert_disjoint();
+
+-- 2. Transaction related disjoint ensurement triggers
 
 CREATE OR REPLACE FUNCTION check_resale_payment_disjoint() RETURNS TRIGGER AS $$
 BEGIN

@@ -555,7 +555,7 @@ CREATE TABLE buyer_review (
         OR revised_at >= created_at
     ),
 
-    UNIQUE (user_id, event_id)   -- One review per buyer per event    
+    UNIQUE (user_id, event_id)   -- One review per buyer per event.    
 );
 
 -- 23. Organization Review Table
@@ -591,7 +591,7 @@ CREATE TABLE organization_review (
         OR revised_at >= created_at
     ), 
 
-    UNIQUE (user_id, event_id, organization_id)  -- One review per organizer per event per organization     
+    UNIQUE (user_id, event_id, organization_id)  -- One review per organizer per event per organization.     
 );
 
 -- 24. Reservation History Table
