@@ -55,6 +55,8 @@ CALL register_organization(
     p_address := 'Rawalpindi, Pakistan'
 );
 
+SELECT * FROM organization;
+
 -- 2.1. Required venue data for event creation calls
 
 INSERT INTO venue (
@@ -223,6 +225,8 @@ CALL create_event(
     p_venue_id := 5
 );
 
+SELECT * FROM event;
+
 -- 3. Update Event
 
 CALL update_event(
@@ -236,11 +240,15 @@ CALL update_event(
     p_budget := 900000.00
 );
 
+SELECT * FROM event WHERE event_id = 1;
+
 -- 4. Publish Event
 
 CALL publish_event(
     p_event_id := 1
 );
+
+SELECT * FROM event WHERE event_id = 1;
 
 -- 5. Approve Organizer
 
@@ -248,6 +256,8 @@ CALL approve_organizer(
     p_user_id := 2,
     p_event_id := 1
 );
+
+SELECT * FROM event WHERE event_id = 1;
 
 -- 6.1. Seat data required for schedule event
 
@@ -439,6 +449,8 @@ $$;
 
 CALL schedule_event(1);
 
+SELECT * FROM event WHERE event_id = 1;
+
 -- 7.1. Required update before start event
 
 UPDATE event
@@ -453,6 +465,8 @@ WHERE event_id = 1;
 
 CALL start_event(1);
 
+SELECT * FROM event WHERE event_id = 1;
+
 -- 8.1. Required update before complete event
 
 UPDATE event
@@ -463,6 +477,8 @@ WHERE event_id = 1;
 
 CALL complete_event(1);
 
+SELECT * FROM event WHERE event_id = 1;
+
 -- 9. Cancel Event
 
 CALL publish_event(2);
@@ -470,9 +486,38 @@ CALL approve_organizer(2, 2);
 CALL schedule_event(2);
 CALL cancel_event(2);
 
+SELECT * FROM event WHERE event_id = 2;
+
 -- 10. Issue Event Payment
 
 CALL issue_event_payment(
     1,
-    'Bank Transfer'
+    'Bank Transfer',
+    5,
+    'Excellent event management and communication throughout the event.'
 );
+
+SELECT t.*
+FROM transaction t
+JOIN event_payment ep
+    ON t.transaction_id = ep.transaction_id
+WHERE ep.event_id = 1;
+
+SELECT *
+FROM event_payment
+WHERE event_id = 1;
+
+SELECT *
+FROM organization_review
+WHERE event_id = 1;
+
+-- 11. Update Organization Review
+
+CALL update_organizer_review(
+    p_event_id := 1,
+    p_rating := 4
+);
+
+SELECT *
+FROM organization_review
+WHERE event_id = 1;
