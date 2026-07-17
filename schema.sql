@@ -154,7 +154,7 @@ CREATE TABLE event (
     
     organization_id INTEGER NOT NULL,
     venue_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER,
 
     FOREIGN KEY (organization_id) REFERENCES organization(organization_id),
     FOREIGN KEY (venue_id) REFERENCES venue(venue_id),
@@ -199,7 +199,18 @@ CREATE TABLE event (
         )
     ),
 
-    CHECK (description IS NULL OR TRIM(description) != '')
+    CHECK (description IS NULL OR TRIM(description) != ''),
+
+    CHECK (
+        is_resale_allowed = TRUE
+        OR
+        (
+            is_resale_allowed = FALSE
+            AND org_commission_percentage = 0
+            AND resale_profit_percentage = 0
+        )
+    )
+
 );
 
 -- 7. Theater Table 
