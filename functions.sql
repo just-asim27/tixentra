@@ -43,3 +43,47 @@ BEGIN
 
 END;
 $$;
+
+-- 2. Get Organizer Reviews
+
+CREATE OR REPLACE FUNCTION get_organizer_reviews(
+    p_user_id INTEGER
+)
+RETURNS TABLE (
+    organization_name VARCHAR,
+    event_title VARCHAR,
+    rating INTEGER,
+    comment TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM organizer
+        WHERE user_id = p_user_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Organizer does not exist.';
+    END IF;
+
+    RETURN QUERY
+
+    SELECT
+        org.name,
+        e.title,
+        r.rating,
+        r.comment
+
+    FROM organization_review r
+    JOIN organization org
+        ON r.organization_id = org.organization_id
+    JOIN event e
+        ON r.event_id = e.event_id
+
+    WHERE r.user_id = p_user_id
+
+    ORDER BY r.created_at DESC;
+
+END;
+$$;
