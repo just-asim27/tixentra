@@ -659,7 +659,9 @@ $$;
 
 CREATE OR REPLACE PROCEDURE issue_event_payment(
     p_event_id INTEGER,
-    p_payment_method VARCHAR
+    p_payment_method VARCHAR,
+    p_rating INTEGER,
+    p_comment TEXT
 )
 LANGUAGE plpgsql
 AS $$
@@ -704,6 +706,14 @@ BEGIN
         RAISE EXCEPTION 'Payment has already been issued for this event.';
     END IF;
 
+    IF (
+        SELECT COUNT(*)
+        FROM organization_review
+        WHERE event_id = p_event_id
+    ) > 0 THEN
+        RAISE EXCEPTION 'A review has already been submitted for this event.';
+    END IF;
+
     SELECT
         offered_payment,
         user_id,
@@ -741,7 +751,70 @@ BEGIN
         v_organization_id
     );
 
-    RAISE NOTICE 'Payment issued successfully to the organizer.';
+    INSERT INTO organization_review (
+        rating,
+        comment,
+        user_id,
+        event_id,
+        organization_id
+    )
+    VALUES (
+        p_rating,
+        p_comment,
+        v_user_id,
+        p_event_id,
+        v_organization_id
+    );
+
+    RAISE NOTICE 'Payment issued successfully and organizer review submitted.';
+
+END;
+$$;
+
+-- 11. Update Organization Review
+
+CREATE OR REPLACE PROCEDURE update_organizer_review(
+    p_event_id INTEGER,
+    p_rating INTEGER DEFAULT NULL,
+    p_comment TEXT DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'The event does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM organization_review
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'No review exists for this event.';
+    END IF;
+
+    UPDATE organization_review
+    SET
+        rating = COALESCE(
+            p_rating,
+            rating
+        ),
+
+        comment = COALESCE(
+            p_comment,
+            comment
+        ),
+
+        revised_at = CURRENT_TIMESTAMP
+
+    WHERE event_id = p_event_id;
+
+    RAISE NOTICE 'Organizer review updated successfully.';
 
 END;
 $$;
