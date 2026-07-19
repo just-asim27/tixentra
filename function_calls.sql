@@ -73,7 +73,7 @@ VALUES
 SELECT *
 FROM get_event_applications(1);
 
--- 2.1. Historical event data for reviews 
+-- 2.1. Historical Event Data for Reviews
 
 INSERT INTO event (
     title,
@@ -100,10 +100,10 @@ INSERT INTO event (
 )
 VALUES
 (
-    'AI Developers Conference 2025',
-    'A national conference for AI professionals, researchers, and software developers.',
-    '2025-03-15 09:00:00',
-    '2025-03-15 18:00:00',
+    'Pakistan vs India ODI 2025',
+    'Asia Cup 2025 group stage cricket match.',
+    '2025-03-15 15:00:00',
+    '2025-03-15 22:00:00',
     '2025-02-01 00:00:00',
     '2025-03-14 23:59:59',
     45000.00,
@@ -112,9 +112,9 @@ VALUES
     TRUE,
     10.00,
     5.00,
-    80,
-    60,
-    18,
+    5,
+    4,
+    NULL,
     1500.00,
     200.00,
     700000.00,
@@ -123,10 +123,10 @@ VALUES
     1
 ),
 (
-    'Pakistan Music Festival 2025',
-    'A live music festival featuring artists from across Pakistan.',
-    '2025-05-20 16:00:00',
-    '2025-05-20 23:30:00',
+    'England vs Australia T20 2025',
+    'International T20 series cricket match.',
+    '2025-05-20 18:00:00',
+    '2025-05-20 22:30:00',
     '2025-04-01 00:00:00',
     '2025-05-19 23:59:59',
     70000.00,
@@ -135,10 +135,10 @@ VALUES
     FALSE,
     0.00,
     0.00,
-    150,
-    120,
-    16,
-    2500.00,
+    8,
+    6,
+    NULL,
+    2000.00,
     500.00,
     1200000.00,
     2,
@@ -146,10 +146,10 @@ VALUES
     2
 ),
 (
-    'Startup Innovation Expo 2025',
-    'An exhibition connecting startups, investors, and technology companies.',
-    '2025-08-10 10:00:00',
-    '2025-08-11 17:00:00',
+    'South Africa vs New Zealand ODI 2025',
+    'Champions Trophy 2025 one-day international match.',
+    '2025-08-10 14:00:00',
+    '2025-08-10 21:00:00',
     '2025-06-15 00:00:00',
     '2025-08-09 23:59:59',
     35000.00,
@@ -158,18 +158,48 @@ VALUES
     TRUE,
     8.00,
     3.00,
-    120,
-    100,
-    18,
+    6,
+    5,
+    NULL,
     1800.00,
     250.00,
     900000.00,
     3,
-    3,
+    1,
     3
 );
 
--- 2.2. Sample organization reviews
+INSERT INTO sports (
+    event_id,
+    sport_type,
+    home_team,
+    away_team,
+    competition_name
+)
+VALUES
+(
+    3,
+    'Cricket',
+    'Pakistan',
+    'India',
+    'Asia Cup 2025'
+),
+(
+    4,
+    'Cricket',
+    'England',
+    'Australia',
+    'World T20 Series 2025'
+),
+(
+    5,
+    'Cricket',
+    'South Africa',
+    'New Zealand',
+    'Champions Trophy 2025'
+);
+
+-- 2.2. Sample Organization Reviews
 
 INSERT INTO organization_review (
     rating,
@@ -183,24 +213,113 @@ VALUES
     5,
     'Excellent event management and communication throughout the event.',
     1,
-    6,
+    3,
     1
 ),
 (
     4,
     'Managed the event professionally and handled unexpected situations very well.',
     2,
-    7,
+    4,
     2
 ),
 (
     5,
-    'Outstanding coordination with vendors, speakers, and attendees.',
+    'Outstanding coordination with players, officials, and event logistics.',
     3,
-    8,
+    5,
     3
 );
 
 -- 2.3. Get Organizer Reviews
 
-SELECT * FROM get_organizer_reviews(1);
+SELECT * FROM get_organizer_reviews(2);
+
+-- 3.1. Sample buyer data
+
+INSERT INTO buyer (
+    name,
+    email,
+    national_id,
+    password,
+    dob,
+    phone
+)
+VALUES
+(
+    'Ali Khan',
+    'ali.khan@example.com',
+    '35202-1234567-1',
+    'Ali@123',
+    '2000-05-10',
+    '0300-1234567'
+);
+
+-- 3.2. Sample transaction data
+
+INSERT INTO transaction (
+    amount,
+    payment_method,
+    payment_status
+)
+VALUES
+(
+    2200.00,
+    'Card',
+    'Completed'
+);
+
+INSERT INTO initial_payment (
+    transaction_id,
+    organization_id,
+    user_id,
+    ticket_id
+)
+VALUES
+(
+    1,
+    1,
+    1,
+    1
+);
+
+UPDATE ticket
+SET status = 'Sold'
+WHERE ticket_id = 1;
+
+-- 3.3. Sample ownership data
+
+INSERT INTO ownership_history (
+    user_id,
+    ticket_id,
+    is_current
+)
+VALUES
+(
+    1,
+    1,
+    TRUE
+);
+
+-- 3.4. Sample refund data
+
+INSERT INTO refund (
+    amount,
+    refund_method,
+    refund_status,
+    reason,
+    transaction_id
+)
+VALUES
+(
+    2200.00,
+    'Card',
+    'Pending',
+    'Unable to attend the event due to personal reasons.',
+    1
+);
+
+-- 3.5. Get Refund Requests
+
+SELECT *
+FROM get_refund_requests(1);

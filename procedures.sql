@@ -330,6 +330,24 @@ BEGIN
         RAISE EXCEPTION 'Only Draft events can be published.';
     END IF;
 
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0
+    AND (
+        SELECT COUNT(*)
+        FROM sports
+        WHERE event_id = p_event_id
+    ) = 0
+    AND (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'An event must belong to a subtype before it can be published.';
+    END IF;
+
     UPDATE event
     SET status = 'Application_Open'
     WHERE event_id = p_event_id;
@@ -815,6 +833,894 @@ BEGIN
     WHERE event_id = p_event_id;
 
     RAISE NOTICE 'Organizer review updated successfully.';
+
+END;
+$$;
+
+-- 12. Create Sports 
+
+CREATE OR REPLACE PROCEDURE create_sports(
+    p_event_id INTEGER,
+    p_sport_type VARCHAR,
+    p_home_team VARCHAR,
+    p_away_team VARCHAR,
+    p_competition_name VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Sports details can only be added to Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM sports
+        WHERE event_id = p_event_id
+    ) > 0 THEN
+        RAISE EXCEPTION 'This event has already been assigned a subtype.';
+    END IF;
+
+    INSERT INTO sports (
+        event_id,
+        sport_type,
+        home_team,
+        away_team,
+        competition_name
+    )
+    VALUES (
+        p_event_id,
+        p_sport_type,
+        p_home_team,
+        p_away_team,
+        p_competition_name
+    );
+
+    RAISE NOTICE 'Sports details added successfully.';
+
+END;
+$$;
+
+-- 13. Update Sports 
+
+CREATE OR REPLACE PROCEDURE update_sports(
+    p_event_id INTEGER,
+    p_sport_type VARCHAR DEFAULT NULL,
+    p_home_team VARCHAR DEFAULT NULL,
+    p_away_team VARCHAR DEFAULT NULL,
+    p_competition_name VARCHAR DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM sports
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Sports details do not exist for this event.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Sports details can only be updated for Draft events.';
+    END IF;
+
+    UPDATE sports
+    SET
+        sport_type = COALESCE(p_sport_type, sport_type),
+        home_team = COALESCE(p_home_team, home_team),
+        away_team = COALESCE(p_away_team, away_team),
+        competition_name = COALESCE(p_competition_name, competition_name)
+    WHERE event_id = p_event_id;
+
+    RAISE NOTICE 'Sports details updated successfully.';
+
+END;
+$$;
+
+-- 14. Create Concert
+
+CREATE OR REPLACE PROCEDURE create_concert(
+    p_event_id INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Concert details can only be added to Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM sports
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) > 0 THEN
+        RAISE EXCEPTION 'This event has already been assigned a subtype.';
+    END IF;
+
+    INSERT INTO concert (
+        event_id
+    )
+    VALUES (
+        p_event_id
+    );
+
+    RAISE NOTICE 'Concert created successfully.';
+
+END;
+$$;
+
+-- 15. Add Concert Artist 
+
+CREATE OR REPLACE PROCEDURE add_concert_artist(
+    p_event_id INTEGER,
+    p_artist_name VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Concert does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Artists can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO concert_artist (
+        event_id,
+        artist_name
+    )
+    VALUES (
+        p_event_id,
+        p_artist_name
+    );
+
+    RAISE NOTICE 'Concert artist added successfully.';
+
+END;
+$$;
+
+-- 16. Remove Concert Artist
+
+CREATE OR REPLACE PROCEDURE remove_concert_artist(
+    p_event_id INTEGER,
+    p_artist_name VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Concert does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Artists can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert_artist
+        WHERE event_id = p_event_id
+          AND artist_name = p_artist_name
+    ) = 0 THEN
+        RAISE EXCEPTION 'Artist does not exist for this concert.';
+    END IF;
+
+    DELETE FROM concert_artist
+    WHERE event_id = p_event_id
+      AND artist_name = p_artist_name;
+
+    RAISE NOTICE 'Concert artist removed successfully.';
+
+END;
+$$;
+
+-- 17. Add Concert Genre
+
+CREATE OR REPLACE PROCEDURE add_concert_genre(
+    p_event_id INTEGER,
+    p_genre VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Concert does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genres can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO concert_genre (
+        event_id,
+        genre
+    )
+    VALUES (
+        p_event_id,
+        p_genre
+    );
+
+    RAISE NOTICE 'Concert genre added successfully.';
+
+END;
+$$;
+
+-- 18. Remove Concert Genre
+
+CREATE OR REPLACE PROCEDURE remove_concert_genre(
+    p_event_id INTEGER,
+    p_genre VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Concert does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genres can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM concert_genre
+        WHERE event_id = p_event_id
+          AND genre = p_genre
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genre does not exist for this concert.';
+    END IF;
+
+    DELETE FROM concert_genre
+    WHERE event_id = p_event_id
+      AND genre = p_genre;
+
+    RAISE NOTICE 'Concert genre removed successfully.';
+
+END;
+$$;
+
+-- 19. Create Theater
+
+CREATE OR REPLACE PROCEDURE create_theater(
+    p_event_id INTEGER,
+    p_show_name VARCHAR,
+    p_language VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater details can only be added to Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM sports
+        WHERE event_id = p_event_id
+    ) > 0
+    OR (
+        SELECT COUNT(*)
+        FROM concert
+        WHERE event_id = p_event_id
+    ) > 0 THEN
+        RAISE EXCEPTION 'This event has already been assigned a subtype.';
+    END IF;
+
+    INSERT INTO theater (
+        event_id,
+        show_name,
+        language
+    )
+    VALUES (
+        p_event_id,
+        p_show_name,
+        p_language
+    );
+
+    RAISE NOTICE 'Theater details added successfully.';
+
+END;
+$$;
+
+-- 20. Update Theater
+
+CREATE OR REPLACE PROCEDURE update_theater(
+    p_event_id INTEGER,
+    p_show_name VARCHAR DEFAULT NULL,
+    p_language VARCHAR DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater details can only be updated for Draft events.';
+    END IF;
+
+    UPDATE theater
+    SET
+        show_name = COALESCE(p_show_name, show_name),
+        language = COALESCE(p_language, language)
+    WHERE event_id = p_event_id;
+
+    RAISE NOTICE 'Theater details updated successfully.';
+
+END;
+$$;
+
+-- 21. Add Theater Genre
+
+CREATE OR REPLACE PROCEDURE add_theater_genre(
+    p_event_id INTEGER,
+    p_genre VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genres can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO theater_genre (
+        event_id,
+        genre
+    )
+    VALUES (
+        p_event_id,
+        p_genre
+    );
+
+    RAISE NOTICE 'Theater genre added successfully.';
+
+END;
+$$;
+
+-- 22. Remove Theater Genre
+
+CREATE OR REPLACE PROCEDURE remove_theater_genre(
+    p_event_id INTEGER,
+    p_genre VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genres can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater_genre
+        WHERE event_id = p_event_id
+          AND genre = p_genre
+    ) = 0 THEN
+        RAISE EXCEPTION 'Genre does not exist for this theater.';
+    END IF;
+
+    DELETE FROM theater_genre
+    WHERE event_id = p_event_id
+      AND genre = p_genre;
+
+    RAISE NOTICE 'Theater genre removed successfully.';
+
+END;
+$$;
+
+-- 23. Add Theater Director
+
+CREATE OR REPLACE PROCEDURE add_theater_director(
+    p_event_id INTEGER,
+    p_director VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Directors can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO theater_director (
+        event_id,
+        director
+    )
+    VALUES (
+        p_event_id,
+        p_director
+    );
+
+    RAISE NOTICE 'Director added successfully.';
+
+END;
+$$;
+
+-- 24. Remove Theater Director
+
+CREATE OR REPLACE PROCEDURE remove_theater_director(
+    p_event_id INTEGER,
+    p_director VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Directors can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater_director
+        WHERE event_id = p_event_id
+          AND director = p_director
+    ) = 0 THEN
+        RAISE EXCEPTION 'Director does not exist for this theater.';
+    END IF;
+
+    DELETE FROM theater_director
+    WHERE event_id = p_event_id
+      AND director = p_director;
+
+    RAISE NOTICE 'Director removed successfully.';
+
+END;
+$$;
+
+-- 25. Add Theater Writer
+
+CREATE OR REPLACE PROCEDURE add_theater_writer(
+    p_event_id INTEGER,
+    p_writer VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Writers can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO theater_writer (
+        event_id,
+        writer
+    )
+    VALUES (
+        p_event_id,
+        p_writer
+    );
+
+    RAISE NOTICE 'Writer added successfully.';
+
+END;
+$$;
+
+-- 26. Remove Theater Writer
+
+CREATE OR REPLACE PROCEDURE remove_theater_writer(
+    p_event_id INTEGER,
+    p_writer VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Writers can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater_writer
+        WHERE event_id = p_event_id
+          AND writer = p_writer
+    ) = 0 THEN
+        RAISE EXCEPTION 'Writer does not exist for this theater.';
+    END IF;
+
+    DELETE FROM theater_writer
+    WHERE event_id = p_event_id
+      AND writer = p_writer;
+
+    RAISE NOTICE 'Writer removed successfully.';
+
+END;
+$$;
+
+-- 27. Add Theater Cast Member
+
+CREATE OR REPLACE PROCEDURE add_theater_cast(
+    p_event_id INTEGER,
+    p_cast_member VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Cast members can only be added to Draft events.';
+    END IF;
+
+    INSERT INTO theater_cast (
+        event_id,
+        cast_member
+    )
+    VALUES (
+        p_event_id,
+        p_cast_member
+    );
+
+    RAISE NOTICE 'Cast member added successfully.';
+
+END;
+$$;
+
+-- 28. Remove Theater Cast Member
+
+CREATE OR REPLACE PROCEDURE remove_theater_cast(
+    p_event_id INTEGER,
+    p_cast_member VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Theater does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+          AND status = 'Draft'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Cast members can only be removed from Draft events.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM theater_cast
+        WHERE event_id = p_event_id
+          AND cast_member = p_cast_member
+    ) = 0 THEN
+        RAISE EXCEPTION 'Cast member does not exist for this theater.';
+    END IF;
+
+    DELETE FROM theater_cast
+    WHERE event_id = p_event_id
+      AND cast_member = p_cast_member;
+
+    RAISE NOTICE 'Cast member removed successfully.';
+
+END;
+$$;
+
+-- 29. Process Refund Request
+
+CREATE OR REPLACE PROCEDURE process_refund_request(
+    p_refund_id INTEGER,
+    p_refund_status VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_current_status VARCHAR;
+    v_ticket_id INTEGER;
+    v_user_id INTEGER;
+    v_start_datetime TIMESTAMP;
+BEGIN
+
+    IF (
+        SELECT COUNT(*)
+        FROM refund
+        WHERE refund_id = p_refund_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Refund request does not exist.';
+    END IF;
+
+    SELECT
+        r.refund_status,
+        ip.ticket_id,
+        ip.user_id,
+        e.start_datetime
+    INTO
+        v_current_status,
+        v_ticket_id,
+        v_user_id,
+        v_start_datetime
+    FROM refund r
+
+    JOIN initial_payment ip
+        ON r.transaction_id = ip.transaction_id
+
+    JOIN ticket t
+        ON ip.ticket_id = t.ticket_id
+
+    JOIN event e
+        ON t.event_id = e.event_id
+
+    WHERE r.refund_id = p_refund_id;
+
+    IF v_current_status <> 'Pending' THEN
+        RAISE EXCEPTION
+            'Only pending refund requests can be processed.';
+    END IF;
+
+    IF p_refund_status NOT IN (
+        'Completed',
+        'Rejected'
+    ) THEN
+        RAISE EXCEPTION
+            'Refund status must be Completed or Rejected.';
+    END IF;
+
+    IF CURRENT_TIMESTAMP >= v_start_datetime THEN
+        RAISE EXCEPTION
+            'Refund requests cannot be processed after the event has started.';
+    END IF;
+
+    IF p_refund_status = 'Completed' THEN
+
+        UPDATE refund
+        SET refund_status = 'Completed'
+        WHERE refund_id = p_refund_id;
+
+        UPDATE ownership_history
+        SET
+            owned_until = CURRENT_TIMESTAMP,
+            is_current = FALSE
+        WHERE user_id = v_user_id
+          AND ticket_id = v_ticket_id
+          AND is_current = TRUE;
+
+        UPDATE ticket
+        SET status = 'Available'
+        WHERE ticket_id = v_ticket_id;
+
+    ELSE
+
+        UPDATE refund
+        SET refund_status = 'Rejected'
+        WHERE refund_id = p_refund_id;
+
+    END IF;
+
+    RAISE NOTICE
+        'Refund request processed successfully.';
 
 END;
 $$;

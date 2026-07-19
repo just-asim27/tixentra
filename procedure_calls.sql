@@ -69,57 +69,30 @@ INSERT INTO venue (
 )
 VALUES
 (
-    'Expo Convention Hall',
-    'Lahore',
-    'Pakistan',
-    30,                     -- 5 rows × 6 seats
-    'Conference Hall',
-    'Johar Town, Lahore'
-),
-
-(
-    'National Stadium Ground',
+    'National Stadium',
     'Karachi',
     'Pakistan',
-    60,                     -- 10 rows × 6 seats
+    30,
     'Stadium',
-    'Karsaz Road, Karachi'
+    'Karachi, Pakistan'
 ),
 
 (
-    'Arts & Culture Auditorium',
-    'Islamabad',
+    'Gaddafi Stadium',
+    'Lahore',
     'Pakistan',
-    24,                     -- 4 rows × 6 seats
-    'Auditorium',
-    'F-6 Markaz, Islamabad'
-),
-
-(
-    'Business Expo Center',
-    'Faisalabad',
-    'Pakistan',
-    48,                     -- 6 rows × 8 seats
-    'Exhibition Center',
-    'Susan Road, Faisalabad'
-),
-
-(
-    'Pearl Continental Ballroom',
-    'Rawalpindi',
-    'Pakistan',
-    20,                     -- 4 rows × 5 seats
-    'Hotel Ballroom',
-    'Mall Road, Rawalpindi'
+    60,
+    'Stadium',
+    'Lahore, Pakistan'
 );
 
 -- 2.2. Event Creations
 
 CALL create_event(
-    p_title := 'Tech Innovators Summit 2026',
-    p_description := 'A gathering of leading tech innovators, startups, and investors to discuss emerging trends in AI and software.',
-    p_start_datetime := '2026-08-15 09:00:00',
-    p_end_datetime := '2026-08-15 18:00:00',
+    p_title := 'Pakistan vs India ODI',
+    p_description := 'Asia Cup 2026 group stage match.',
+    p_start_datetime := '2026-08-15 15:00:00',
+    p_end_datetime := '2026-08-15 22:00:00',
     p_sale_start_datetime := '2026-07-20 00:00:00',
     p_sale_end_datetime := '2026-08-14 23:59:59',
     p_offered_payment := 50000.00,
@@ -129,7 +102,7 @@ CALL create_event(
     p_resale_profit_percentage := 5.00,
     p_max_reservations := 5,
     p_max_bookings := 4,
-    p_min_age := 18,
+    p_min_age := NULL,
     p_base_price := 1500.00,
     p_increment_per_seat_type := 200.00,
     p_budget := 800000.00,
@@ -138,10 +111,10 @@ CALL create_event(
 );
 
 CALL create_event(
-    p_title := 'Prime Music Festival',
-    p_description := 'An open-air music festival featuring top local and international artists across multiple genres.',
-    p_start_datetime := '2026-08-25 16:00:00',
-    p_end_datetime := '2026-08-25 23:30:00',
+    p_title := 'England vs Australia T20',
+    p_description := 'International T20 series match.',
+    p_start_datetime := '2026-08-25 18:00:00',
+    p_end_datetime := '2026-08-25 22:30:00',
     p_sale_start_datetime := '2026-08-01 00:00:00',
     p_sale_end_datetime := '2026-08-24 23:59:59',
     p_offered_payment := 75000.00,
@@ -151,7 +124,7 @@ CALL create_event(
     p_resale_profit_percentage := 0.00,
     p_max_reservations := 8,
     p_max_bookings := 6,
-    p_min_age := 16,
+    p_min_age := NULL,
     p_base_price := 2000.00,
     p_increment_per_seat_type := 500.00,
     p_budget := 1500000.00,
@@ -159,80 +132,33 @@ CALL create_event(
     p_venue_id := 2
 );
 
-CALL create_event(
-    p_title := 'Elite Comedy Night',
-    p_description := 'An evening of stand-up comedy featuring some of the funniest comedians from across the country.',
-    p_start_datetime := '2026-09-05 20:00:00',
-    p_end_datetime := '2026-09-05 23:00:00',
-    p_sale_start_datetime := '2026-08-10 00:00:00',
-    p_sale_end_datetime := '2026-09-04 23:59:59',
-    p_offered_payment := 30000.00,
-    p_reservation_expiry_duration := 20,
-    p_is_resale_allowed := TRUE,
-    p_org_commission_percentage := 8.00,
-    p_resale_profit_percentage := 3.00,
-    p_max_reservations := 4,
-    p_max_bookings := 3,
-    p_min_age := 16,
-    p_base_price := 1000.00,
-    p_increment_per_seat_type := 150.00,
-    p_budget := 400000.00,
-    p_organization_id := 3,
-    p_venue_id := 3
+-- 2.3. Create Sports Details
+
+CALL create_sports(
+    p_event_id := 1,
+    p_sport_type := 'Cricket',
+    p_home_team := 'Pakistan',
+    p_away_team := 'India',
+    p_competition_name := 'Asia Cup 2026'
 );
 
-CALL create_event(
-    p_title := 'Vision Business Expo',
-    p_description := 'A large-scale expo connecting entrepreneurs, investors, and industry leaders for networking and growth opportunities.',
-    p_start_datetime := '2026-09-15 10:00:00',
-    p_end_datetime := '2026-09-17 17:00:00',
-    p_sale_start_datetime := '2026-08-20 00:00:00',
-    p_sale_end_datetime := '2026-09-14 23:59:59',
-    p_offered_payment := 25000.00,
-    p_reservation_expiry_duration := 30,
-    p_is_resale_allowed := FALSE,
-    p_org_commission_percentage := 0.00,
-    p_resale_profit_percentage := 0.00,
-    p_max_reservations := 6,
-    p_max_bookings := 5,
-    p_min_age := 18,
-    p_base_price := 3000.00,
-    p_increment_per_seat_type := 300.00,
-    p_budget := 1200000.00,
-    p_organization_id := 4,
-    p_venue_id := 4
-);
-
-CALL create_event(
-    p_title := 'NextGen Leadership Conference',
-    p_description := 'A conference focused on developing leadership skills among young professionals through workshops and keynote sessions.',
-    p_start_datetime := '2026-09-30 09:00:00',
-    p_end_datetime := '2026-10-01 16:00:00',
-    p_sale_start_datetime := '2026-09-01 00:00:00',
-    p_sale_end_datetime := '2026-09-29 23:59:59',
-    p_offered_payment := 20000.00,
-    p_reservation_expiry_duration := 25,
-    p_is_resale_allowed := TRUE,
-    p_org_commission_percentage := 9.00,
-    p_resale_profit_percentage := 4.00,
-    p_max_reservations := 3,
-    p_max_bookings := 2,
-    p_min_age := 16,
-    p_base_price := 1800.00,
-    p_increment_per_seat_type := 250.00,
-    p_budget := 600000.00,
-    p_organization_id := 5,
-    p_venue_id := 5
+CALL create_sports(
+    p_event_id := 2,
+    p_sport_type := 'Cricket',
+    p_home_team := 'England',
+    p_away_team := 'Australia',
+    p_competition_name := 'World T20 Series'
 );
 
 SELECT * FROM event;
+SELECT * FROM sports;
 
 -- 3. Update Event
 
 CALL update_event(
     p_event_id := 1,
-    p_title := 'Tech Innovators Summit 2026 - Updated',
-    p_description := 'An updated description featuring AI, cybersecurity, cloud computing, and software engineering.',
+    p_title := 'Pakistan vs India ODI - Updated',
+    p_description := 'Asia Cup 2026 group stage match with updated event information.',
     p_offered_payment := 60000.00,
     p_max_reservations := 6,
     p_max_bookings := 5,
@@ -240,7 +166,13 @@ CALL update_event(
     p_budget := 900000.00
 );
 
+CALL update_sports(
+    p_event_id := 1,
+    p_competition_name := 'Asia Cup 2026 - Final'
+);
+
 SELECT * FROM event WHERE event_id = 1;
+SELECT * FROM sports WHERE event_id = 1;
 
 -- 4. Publish Event
 
@@ -259,7 +191,7 @@ CALL approve_organizer(
 
 SELECT * FROM event WHERE event_id = 1;
 
--- 6.1. Seat data required for schedule event
+-- 6.1. Seat Data Required for Schedule Event
 
 DO $$
 DECLARE
@@ -288,6 +220,7 @@ BEGIN
         END IF;
 
         FOR v_seat IN 1..6 LOOP
+
             INSERT INTO seat (
                 row,
                 number,
@@ -302,6 +235,7 @@ BEGIN
                 v_seat_type,
                 1
             );
+
         END LOOP;
 
     END LOOP;
@@ -322,6 +256,7 @@ BEGIN
         END IF;
 
         FOR v_seat IN 1..6 LOOP
+
             INSERT INTO seat (
                 row,
                 number,
@@ -336,108 +271,7 @@ BEGIN
                 v_seat_type,
                 2
             );
-        END LOOP;
 
-    END LOOP;
-
-    FOR v_row IN 1..4 LOOP
-
-        v_row_letter := CHR(64 + v_row);
-
-        IF v_row = 1 THEN
-            v_seat_type := 'VIP';
-            v_section := 'Front';
-        ELSIF v_row = 2 THEN
-            v_seat_type := 'Premium';
-            v_section := 'Middle';
-        ELSE
-            v_seat_type := 'Regular';
-            v_section := 'Rear';
-        END IF;
-
-        FOR v_seat IN 1..6 LOOP
-            INSERT INTO seat (
-                row,
-                number,
-                section,
-                seat_type,
-                venue_id
-            )
-            VALUES (
-                v_row_letter,
-                v_seat,
-                v_section,
-                v_seat_type,
-                3
-            );
-        END LOOP;
-
-    END LOOP;
-
-    FOR v_row IN 1..6 LOOP
-
-        v_row_letter := CHR(64 + v_row);
-
-        IF v_row <= 2 THEN
-            v_seat_type := 'VIP';
-            v_section := 'Front';
-        ELSIF v_row <= 4 THEN
-            v_seat_type := 'Premium';
-            v_section := 'Middle';
-        ELSE
-            v_seat_type := 'Regular';
-            v_section := 'Rear';
-        END IF;
-
-        FOR v_seat IN 1..8 LOOP
-            INSERT INTO seat (
-                row,
-                number,
-                section,
-                seat_type,
-                venue_id
-            )
-            VALUES (
-                v_row_letter,
-                v_seat,
-                v_section,
-                v_seat_type,
-                4
-            );
-        END LOOP;
-
-    END LOOP;
-
-    FOR v_row IN 1..4 LOOP
-
-        v_row_letter := CHR(64 + v_row);
-
-        IF v_row = 1 THEN
-            v_seat_type := 'VIP';
-            v_section := 'Front';
-        ELSIF v_row = 2 THEN
-            v_seat_type := 'Premium';
-            v_section := 'Middle';
-        ELSE
-            v_seat_type := 'Regular';
-            v_section := 'Rear';
-        END IF;
-
-        FOR v_seat IN 1..5 LOOP
-            INSERT INTO seat (
-                row,
-                number,
-                section,
-                seat_type,
-                venue_id
-            )
-            VALUES (
-                v_row_letter,
-                v_seat,
-                v_section,
-                v_seat_type,
-                5
-            );
         END LOOP;
 
     END LOOP;
@@ -450,6 +284,25 @@ $$;
 CALL schedule_event(1);
 
 SELECT * FROM event WHERE event_id = 1;
+
+-- 29.1. Process Refund Requests
+
+CALL process_refund_request(
+    p_refund_id := 1,
+    p_refund_status := 'Completed'
+);
+
+SELECT *
+FROM refund
+WHERE refund_id = 1;
+
+SELECT *
+FROM ownership_history
+WHERE ticket_id = 1;
+
+SELECT *
+FROM ticket
+WHERE ticket_id = 1;
 
 -- 7.1. Required update before start event
 

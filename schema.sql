@@ -512,7 +512,7 @@ CREATE TABLE refund (
     transaction_id INTEGER NOT NULL,
 
     FOREIGN KEY (transaction_id)
-        REFERENCES transaction(transaction_id),
+    REFERENCES initial_payment(transaction_id),
 
     CHECK (amount > 0),
 
