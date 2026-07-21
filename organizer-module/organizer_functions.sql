@@ -77,6 +77,8 @@ BEGIN
 
     WHERE ah.user_id = p_user_id
 
+    ORDER BY ah.applied_at DESC;
+
 END;
 $$;
 
@@ -125,10 +127,10 @@ BEGIN
 
     WHERE ep.user_id = p_user_id
 
+    ORDER BY t.date_time DESC;
+
 END;
 $$;
-
-
 
 -- 4. View performance reviews from organizations.
 
@@ -139,7 +141,8 @@ RETURNS TABLE (
     organization_name VARCHAR,
     event_title VARCHAR,
     rating INTEGER,
-    comment TEXT
+    comment TEXT,
+    review_date TIMESTAMP
 )
 LANGUAGE plpgsql
 AS $$
@@ -159,7 +162,8 @@ BEGIN
         org.name,
         e.title,
         r.rating,
-        r.comment
+        r.comment,
+        COALESCE(r.revised_at, r.created_at) as review_date
 
     FROM organization_review r
     JOIN organization org
@@ -168,7 +172,7 @@ BEGIN
         ON r.event_id = e.event_id
     WHERE r.user_id = p_user_id
 
+    ORDER BY COALESCE(r.revised_at, r.created_at) DESC;
 
 END;
 $$;
-
