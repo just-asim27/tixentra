@@ -1,4 +1,3 @@
--- Write your function calls here
 -- 1. Browse Events Open for Applications
 
 SELECT * FROM get_open_events();
