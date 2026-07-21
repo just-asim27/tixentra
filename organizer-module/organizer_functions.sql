@@ -1,4 +1,3 @@
--- Write your functions here
 -- 1. Get Open Events (browse events open for management applications)
 
 CREATE OR REPLACE FUNCTION get_open_events()
@@ -10,8 +9,9 @@ RETURNS TABLE (
     end_datetime TIMESTAMP,
     offered_payment NUMERIC,
     organization_name VARCHAR,
-	  venue_name VARCHAR,
-    venue_city VARCHAR
+    venue_name VARCHAR,
+    venue_city VARCHAR,
+    venue_country VARCHAR
 )
 LANGUAGE plpgsql
 AS $$
@@ -28,7 +28,8 @@ BEGIN
         e.offered_payment,
         o.name,
         v.name,
-        v.city
+        v.city,
+        v.country
 
     FROM event e
     JOIN organization o
