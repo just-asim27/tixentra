@@ -1,4 +1,3 @@
--- Write your procedures here
 -- 1. Register Organizer
 
 CREATE OR REPLACE PROCEDURE register_organizer(
@@ -45,7 +44,23 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 
-     IF (
+    IF (
+        SELECT COUNT(*)
+        FROM organizer
+        WHERE user_id = p_user_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Organizer does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = p_event_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event does not exist.';
+    END IF;
+
+    IF (
         SELECT COUNT(*)
         FROM event
         WHERE event_id = p_event_id
