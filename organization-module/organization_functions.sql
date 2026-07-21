@@ -53,7 +53,8 @@ RETURNS TABLE (
     organization_name VARCHAR,
     event_title VARCHAR,
     rating INTEGER,
-    comment TEXT
+    comment TEXT,
+    review_date TIMESTAMP
 )
 LANGUAGE plpgsql
 AS $$
@@ -73,17 +74,17 @@ BEGIN
         org.name,
         e.title,
         r.rating,
-        r.comment
+        r.comment,
+        COALESCE(r.revised_at, r.created_at) as review_date
 
     FROM organization_review r
     JOIN organization org
         ON r.organization_id = org.organization_id
     JOIN event e
         ON r.event_id = e.event_id
-
     WHERE r.user_id = p_user_id
 
-    ORDER BY r.created_at DESC;
+    ORDER BY COALESCE(r.revised_at, r.created_at) DESC;
 
 END;
 $$;
