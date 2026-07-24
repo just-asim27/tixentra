@@ -1,4 +1,3 @@
-
 -- 1. Register Buyers
 
 CALL register_buyer(
@@ -30,19 +29,32 @@ CALL register_buyer(
 
 SELECT * FROM buyer;
 
+-- 2. Reserve Tickets (with Concurrency Demo)
 
--- 2. Reserve Tickets (with Concurrency)
+-- Session A
 
--- First, check available tickets
-SELECT ticket_id, status, price, row, number, section, seat_type FROM view_event_tickets(1) WHERE status = 'Available';
+BEGIN;
 
--- Reserve a ticket (Buyer 1 reserves ticket_id 1)
-CALL reserve_ticket(1, 1);
+CALL reserve_ticket(
+    p_user_id := 1,
+    p_ticket_id := 1
+);
 
--- Check ticket status after reservation
+COMMIT;
+
+-- Session B
+
+BEGIN;
+
+CALL reserve_ticket(
+    p_user_id := 2,
+    p_ticket_id := 1
+);
+
+COMMIT;
+
 SELECT ticket_id, status FROM ticket WHERE ticket_id = 1;
 
--- Check reservation history
 SELECT 
     rh.user_id,
     b.name AS buyer_name,
@@ -54,20 +66,16 @@ FROM reservation_history rh
     JOIN buyer b ON rh.user_id = b.user_id
         WHERE rh.ticket_id = 1;
 
-
 -- 3. Complete Booking (Initial Payment)
 
--- Complete the booking
 CALL complete_booking(
     p_user_id := 1,
     p_ticket_id := 1,
     p_payment_method := 'Card'
 );
 
--- Check ticket status after booking
 SELECT ticket_id, status FROM ticket WHERE ticket_id = 1;
 
--- Check ownership
 SELECT 
     oh.user_id,
     b.name AS buyer_name,
@@ -78,14 +86,14 @@ FROM ownership_history oh
 JOIN buyer b ON oh.user_id = b.user_id
 WHERE oh.ticket_id = 1;
 
--- Check transaction
-SELECT * FROM transaction ORDER BY transaction_id DESC LIMIT 1;
-SELECT * FROM initial_payment ORDER BY transaction_id DESC LIMIT 1;
+SELECT *
+FROM transaction;
 
+SELECT *
+FROM initial_payment;
 
 -- 4. Request Refund
 
--- Request refund for the ticket
 CALL request_refund(
     p_user_id := 1,
     p_ticket_id := 1,
@@ -93,18 +101,4 @@ CALL request_refund(
     p_refund_method := 'Card'
 );
 
--- Check refund requests
-SELECT 
-    r.refund_id,
-    r.amount,
-    r.refund_method,
-    r.refund_status,
-    r.reason,
-    r.date_time,
-    ip.user_id AS buyer_id,
-    b.name AS buyer_name,
-    ip.ticket_id
-FROM refund r
-JOIN initial_payment ip ON r.transaction_id = ip.transaction_id
-JOIN buyer b ON ip.user_id = b.user_id
-ORDER BY r.date_time DESC;
+SELECT * FROM refund where refund_id = 1;
