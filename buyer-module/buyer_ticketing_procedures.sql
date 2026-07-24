@@ -11,9 +11,6 @@ CREATE OR REPLACE PROCEDURE register_buyer(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    IF p_dob + INTERVAL '13 years' > CURRENT_DATE THEN
-        RAISE EXCEPTION 'Buyer must be at least 13 years old.';
-    END IF;
 
     INSERT INTO buyer (
         name,
@@ -33,12 +30,34 @@ BEGIN
     );
 
     RAISE NOTICE 'Buyer registered successfully.';
+
 END;
 $$;
 
+-- 5. Expire Reservation 
 
+CREATE OR REPLACE PROCEDURE expire_reservations()
+LANGUAGE plpgsql
+AS $$
+BEGIN
 
--- 2. Reserve tickets
+    UPDATE reservation_history
+    SET status = 'Expired'
+    WHERE status = 'Active'
+      AND expiry_datetime <= CURRENT_TIMESTAMP;
+
+    UPDATE ticket
+    SET status = 'Available'
+    WHERE ticket_id IN (
+        SELECT ticket_id
+        FROM reservation_history
+        WHERE status = 'Expired'
+    );
+
+END;
+$$;
+
+-- 2. Reserve Ticket
 
 CREATE OR REPLACE PROCEDURE reserve_ticket(
     p_user_id INTEGER,
@@ -57,14 +76,16 @@ DECLARE
     v_min_age INTEGER;
     v_buyer_dob DATE;
 BEGIN
-    -- Validate buyer exists
-    IF (SELECT COUNT(*) FROM buyer WHERE user_id = p_user_id ) = 0
-    THEN
+
+    IF (
+        SELECT COUNT(*)
+        FROM buyer
+        WHERE user_id = p_user_id
+    ) = 0 THEN
         RAISE EXCEPTION 'Buyer does not exist.';
     END IF;
 
-    
-    SELECT 
+    SELECT
         t.event_id,
         t.status,
         e.max_reservations,
@@ -79,83 +100,80 @@ BEGIN
         v_reservation_expiry_duration,
         v_min_age
     FROM ticket t
-    JOIN event e ON t.event_id = e.event_id
+    JOIN event e
+        ON t.event_id = e.event_id
     WHERE t.ticket_id = p_ticket_id
     FOR UPDATE;
 
-    -- Validate ticket exists
-    IF v_event_id IS NULL 
-    THEN
+    IF v_event_id IS NULL THEN
         RAISE EXCEPTION 'Ticket does not exist.';
     END IF;
 
-    -- Validate ticket is available
-    IF v_ticket_status != 'Available' 
-    THEN
+    IF v_ticket_status <> 'Available' THEN
         RAISE EXCEPTION 'Ticket is not available for reservation.';
     END IF;
 
-    -- Validate event is scheduled
-    IF (SELECT COUNT(*) FROM event WHERE event_id = v_event_id AND status = 'Scheduled') = 0
-    THEN
-        RAISE EXCEPTION 'Event is not currently accepting reservations.';
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = v_event_id
+          AND status = 'Scheduled'
+    ) = 0 THEN
+        RAISE EXCEPTION 'Event is not scheduled.';
     END IF;
 
-    -- Validate event is within sales window
-    IF ( SELECT COUNT(*) FROM event WHERE event_id = v_event_id AND sale_start_datetime <= CURRENT_TIMESTAMP AND sale_end_datetime >= CURRENT_TIMESTAMP) = 0 
-    THEN
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = v_event_id
+          AND sale_start_datetime <= CURRENT_TIMESTAMP
+          AND sale_end_datetime >= CURRENT_TIMESTAMP
+    ) = 0 THEN
         RAISE EXCEPTION 'Ticket sales are not currently open for this event.';
     END IF;
 
-    -- Validate event hasn't started
-    IF (SELECT COUNT(*) FROM event WHERE event_id = v_event_id AND start_datetime <= CURRENT_TIMESTAMP) > 0 
-    THEN
-        RAISE EXCEPTION 'Event has already started.';
-    END IF;
-
-    -- Get current reservations count
     SELECT COUNT(*)
     INTO v_current_reservations
     FROM reservation_history rh
-        JOIN ticket t ON rh.ticket_id = t.ticket_id
-            WHERE rh.user_id = p_user_id
-                AND t.event_id = v_event_id
-                    AND rh.status = 'Active';
+    JOIN ticket t
+        ON rh.ticket_id = t.ticket_id
+    WHERE rh.user_id = p_user_id
+      AND t.event_id = v_event_id
+      AND rh.status = 'Active';
 
-    -- Get current bookings count
     SELECT COUNT(*)
     INTO v_current_bookings
     FROM ownership_history oh
-        JOIN ticket t ON oh.ticket_id = t.ticket_id
-            WHERE oh.user_id = p_user_id
-                AND t.event_id = v_event_id
-                    AND oh.is_current = TRUE;
+    JOIN ticket t
+        ON oh.ticket_id = t.ticket_id
+    WHERE oh.user_id = p_user_id
+      AND t.event_id = v_event_id
+      AND oh.is_current = TRUE;
 
-    -- Validate reservation limits
-    IF v_current_reservations >= v_max_reservations 
-    THEN
-        RAISE EXCEPTION 'You have reached the maximum reservation limit for this event.';
+    IF v_current_reservations >= v_max_reservations THEN
+        RAISE EXCEPTION
+            'You have reached the maximum reservation limit for this event.';
     END IF;
 
-    -- Validate booking limits
-    IF v_current_bookings >= v_max_bookings 
-    THEN
-        RAISE EXCEPTION 'You have reached the maximum booking limit for this event.';
+    IF v_current_bookings >= v_max_bookings THEN
+        RAISE EXCEPTION
+            'You have reached the maximum booking limit for this event.';
     END IF;
 
-    -- Validate age restriction 
-    IF v_min_age IS NOT NULL 
-    THEN
-        SELECT dob INTO v_buyer_dob FROM buyer WHERE user_id = p_user_id;
+    IF v_min_age IS NOT NULL THEN
 
-        IF v_buyer_dob + (v_min_age * INTERVAL '1 year') > CURRENT_DATE 
-        THEN
-            RAISE EXCEPTION 'You do not meet the minimum age requirement for this event.';
+        SELECT dob
+        INTO v_buyer_dob
+        FROM buyer
+        WHERE user_id = p_user_id;
+
+        IF v_buyer_dob + (v_min_age * INTERVAL '1 year') > CURRENT_DATE THEN
+            RAISE EXCEPTION
+                'You do not meet the minimum age requirement for this event.';
         END IF;
 
     END IF;
 
-    -- Create reservation 
     INSERT INTO reservation_history (
         user_id,
         ticket_id,
@@ -165,22 +183,24 @@ BEGIN
     VALUES (
         p_user_id,
         p_ticket_id,
-        CURRENT_TIMESTAMP + (v_reservation_expiry_duration * INTERVAL '1 minute'),
+        CURRENT_TIMESTAMP +
+        (v_reservation_expiry_duration * INTERVAL '1 minute'),
         'Active'
     );
 
-    -- Update ticket status
-    UPDATE ticket SET status = 'Reserved' WHERE ticket_id = p_ticket_id;
+    UPDATE ticket
+    SET status = 'Reserved'
+    WHERE ticket_id = p_ticket_id;
 
-    RAISE NOTICE 'Ticket reserved successfully. Reservation expires at %.', 
-                 CURRENT_TIMESTAMP + (v_reservation_expiry_duration * INTERVAL '1 minute');
+    RAISE NOTICE
+        'Ticket reserved successfully. Reservation expires at %.',
+        CURRENT_TIMESTAMP +
+        (v_reservation_expiry_duration * INTERVAL '1 minute');
+
 END;
 $$;
 
-
-
-
--- 3. Complete ticket bookings
+-- 3. Complete Ticket Booking
 
 CREATE OR REPLACE PROCEDURE complete_booking(
     p_user_id INTEGER,
@@ -194,94 +214,86 @@ DECLARE
     v_ticket_status VARCHAR;
     v_ticket_price NUMERIC;
     v_organization_id INTEGER;
+    v_max_bookings INTEGER;
+    v_current_bookings INTEGER;
     v_transaction_id INTEGER;
-    v_reservation_user_id INTEGER;
 BEGIN
-    -- Validate buyer exists
-    IF (SELECT COUNT(*) FROM buyer WHERE user_id = p_user_id) = 0 
-    
-    THEN
+
+    CALL expire_reservations();
+
+    IF (
+        SELECT COUNT(*)
+        FROM buyer
+        WHERE user_id = p_user_id
+    ) = 0 THEN
         RAISE EXCEPTION 'Buyer does not exist.';
     END IF;
 
-    -- Lock the ticket for update
-    SELECT 
+    SELECT
         t.event_id,
         t.status,
         t.price,
-        e.organization_id
+        e.organization_id,
+        e.max_bookings
     INTO
         v_event_id,
         v_ticket_status,
         v_ticket_price,
-        v_organization_id
+        v_organization_id,
+        v_max_bookings
     FROM ticket t
-    JOIN event e ON t.event_id = e.event_id
-    WHERE t.ticket_id = p_ticket_id
-    FOR UPDATE;
+    JOIN event e
+        ON t.event_id = e.event_id
+    WHERE t.ticket_id = p_ticket_id;
 
-    -- Validate ticket exists
-    IF v_event_id IS NULL 
-    
-    THEN
+    IF v_event_id IS NULL THEN
         RAISE EXCEPTION 'Ticket does not exist.';
     END IF;
 
-    -- Validate ticket is reserved
-    IF v_ticket_status != 'Reserved' 
-    
-    THEN
+    IF v_ticket_status <> 'Reserved' THEN
         RAISE EXCEPTION 'Ticket is not reserved.';
     END IF;
 
-    -- Validate reservation belongs to the buyer
-    SELECT user_id INTO v_reservation_user_id FROM reservation_history WHERE ticket_id = p_ticket_id AND status = 'Active'
-    ORDER BY reservation_datetime DESC
-    LIMIT 1;
-
-    IF v_reservation_user_id IS NULL 
-    
-    THEN
-        RAISE EXCEPTION 'No active reservation found for this ticket.';
+    IF (
+        SELECT COUNT(*)
+        FROM reservation_history
+        WHERE user_id = p_user_id
+          AND ticket_id = p_ticket_id
+          AND status = 'Active'
+    ) = 0 THEN
+        RAISE EXCEPTION 'This ticket is not reserved by the buyer.';
     END IF;
 
-    IF v_reservation_user_id != p_user_id 
-    
-    THEN
-        RAISE EXCEPTION 'This ticket is reserved by another buyer.';
-    END IF;
-
-    -- Validate event hasn't started
-    IF (SELECT COUNT(*) FROM event WHERE event_id = v_event_id AND start_datetime <= CURRENT_TIMESTAMP) > 0 
-    
-    THEN
-        RAISE EXCEPTION 'Event has already started.';
-    END IF;
-
-    -- Validate event is within sales window
-    IF (SELECT COUNT(*) FROM event WHERE event_id = v_event_id AND sale_start_datetime <= CURRENT_TIMESTAMP AND sale_end_datetime >= CURRENT_TIMESTAMP) = 0 
-    
-    THEN
+    IF (
+        SELECT COUNT(*)
+        FROM event
+        WHERE event_id = v_event_id
+          AND sale_start_datetime <= CURRENT_TIMESTAMP
+          AND sale_end_datetime >= CURRENT_TIMESTAMP
+    ) = 0 THEN
         RAISE EXCEPTION 'Ticket sales are not currently open for this event.';
     END IF;
 
-    -- Check booking limits
-    IF (SELECT COUNT(*) FROM ownership_history oh JOIN ticket t ON oh.ticket_id = t.ticket_id WHERE oh.user_id = p_user_id AND t.event_id = v_event_id AND oh.is_current = TRUE) >= 
-    (SELECT max_bookings FROM event WHERE event_id = v_event_id) 
-    
-    THEN
-        RAISE EXCEPTION 'You have reached the maximum booking limit for this event.';
+    SELECT COUNT(*)
+    INTO v_current_bookings
+    FROM ownership_history oh
+    JOIN ticket t
+        ON oh.ticket_id = t.ticket_id
+    WHERE oh.user_id = p_user_id
+      AND t.event_id = v_event_id
+      AND oh.is_current = TRUE;
+
+    IF v_current_bookings >= v_max_bookings THEN
+        RAISE EXCEPTION
+            'You have reached the maximum booking limit for this event.';
     END IF;
 
-    -- Create transaction
-    INSERT INTO transaction 
-    (
+    INSERT INTO transaction (
         amount,
         payment_method,
         payment_status
     )
-    VALUES 
-    (
+    VALUES (
         v_ticket_price,
         p_payment_method,
         'Completed'
@@ -289,51 +301,50 @@ BEGIN
     RETURNING transaction_id
     INTO v_transaction_id;
 
-    -- Create initial payment
-    INSERT INTO initial_payment 
-    (
+    INSERT INTO initial_payment (
         transaction_id,
         organization_id,
         user_id,
         ticket_id
     )
-    VALUES 
-    (
+    VALUES (
         v_transaction_id,
         v_organization_id,
         p_user_id,
         p_ticket_id
     );
 
-    -- Update reservation status
-    UPDATE reservation_history SET status = 'Converted' WHERE user_id = p_user_id AND ticket_id = p_ticket_id AND status = 'Active';
+    UPDATE reservation_history
+    SET status = 'Converted'
+    WHERE user_id = p_user_id
+      AND ticket_id = p_ticket_id
+      AND status = 'Active';
 
-    -- Create ownership record
-    INSERT INTO ownership_history 
-    (
+    INSERT INTO ownership_history (
         user_id,
         ticket_id,
         is_current
     )
-    VALUES 
-    (
+    VALUES (
         p_user_id,
         p_ticket_id,
         TRUE
     );
 
-    -- Update ticket status
-    UPDATE ticket SET status = 'Sold' WHERE ticket_id = p_ticket_id;
+    UPDATE ticket
+    SET status = 'Sold'
+    WHERE ticket_id = p_ticket_id;
 
-    RAISE NOTICE 'Booking completed successfully. Transaction ID: %', v_transaction_id;
+    RAISE NOTICE
+        'Booking completed successfully. Transaction ID: %',
+        v_transaction_id;
+
 END;
 $$;
 
+-- 4. Request Refund
 
--- 4. Request refunds for initial payments
-
-CREATE OR REPLACE PROCEDURE request_refund
-(
+CREATE OR REPLACE PROCEDURE request_refund(
     p_user_id INTEGER,
     p_ticket_id INTEGER,
     p_reason TEXT,
@@ -346,80 +357,88 @@ DECLARE
     v_event_start_datetime TIMESTAMP;
     v_ticket_price NUMERIC;
     v_transaction_id INTEGER;
-    v_ownership_owner_id INTEGER;
+    v_refund_id INTEGER;
 BEGIN
 
-    -- Validate buyer exists
-    IF (SELECT COUNT(*) FROM buyer WHERE user_id = p_user_id) = 0 
-    
-    THEN
+    IF (
+        SELECT COUNT(*)
+        FROM buyer
+        WHERE user_id = p_user_id
+    ) = 0 THEN
         RAISE EXCEPTION 'Buyer does not exist.';
     END IF;
 
-    -- Validate ticket exists and is owned by the buyer
-    SELECT 
-        oh.user_id,
-        t.event_id,
-        t.price
+    IF (
+        SELECT COUNT(*)
+        FROM ticket
+        WHERE ticket_id = p_ticket_id
+    ) = 0 THEN
+        RAISE EXCEPTION 'Ticket does not exist.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM ownership_history
+        WHERE user_id = p_user_id
+          AND ticket_id = p_ticket_id
+          AND is_current = TRUE
+    ) = 0 THEN
+        RAISE EXCEPTION 'The buyer does not currently own this ticket.';
+    END IF;
+
+    SELECT
+        event_id,
+        price
     INTO
-        v_ownership_owner_id,
         v_event_id,
         v_ticket_price
-    FROM ticket t
-    JOIN ownership_history oh ON t.ticket_id = oh.ticket_id
-        WHERE t.ticket_id = p_ticket_id
-            AND oh.is_current = TRUE;
+    FROM ticket
+    WHERE ticket_id = p_ticket_id;
 
-    IF v_ownership_owner_id IS NULL 
-    
-    THEN
-        RAISE EXCEPTION 'Ticket does not exist or is not currently owned.';
+    SELECT start_datetime
+    INTO v_event_start_datetime
+    FROM event
+    WHERE event_id = v_event_id;
+
+    IF CURRENT_TIMESTAMP >= v_event_start_datetime THEN
+        RAISE EXCEPTION
+            'Refunds cannot be requested after the event has started.';
     END IF;
 
-    IF v_ownership_owner_id != p_user_id 
-    
-    THEN
-        RAISE EXCEPTION 'You do not own this ticket.';
+    SELECT transaction_id
+    INTO v_transaction_id
+    FROM initial_payment
+    WHERE ticket_id = p_ticket_id;
+
+    IF (
+        SELECT COUNT(*)
+        FROM refund
+        WHERE transaction_id = v_transaction_id
+    ) > 0 THEN
+        RAISE EXCEPTION
+            'A refund request has already been submitted for this ticket.';
     END IF;
 
-    -- Validate event hasn't started
-    SELECT start_datetime INTO v_event_start_datetime FROM event WHERE event_id = v_event_id;
-
-    IF CURRENT_TIMESTAMP >= v_event_start_datetime 
-    
-    THEN
-        RAISE EXCEPTION 'Refunds cannot be requested for events that have already started.';
-    END IF;
-
-    -- Check if refund already exists for this ticket
-    IF (SELECT COUNT(*) FROM refund r JOIN initial_payment ip ON r.transaction_id = ip.transaction_id WHERE ip.ticket_id = p_ticket_id AND r.refund_status IN ('Pending', 'Completed')) > 0 
-    
-    THEN
-        RAISE EXCEPTION 'A refund has already been requested for this ticket.';
-    END IF;
-
-    -- Get the initial payment transaction
-    SELECT transaction_id INTO v_transaction_id FROM initial_payment WHERE ticket_id = p_ticket_id;
-
-    -- Create refund record
-    INSERT INTO refund 
-    (
+    INSERT INTO refund (
         amount,
         refund_method,
         refund_status,
         reason,
         transaction_id
     )
-    VALUES 
-    (
+    VALUES (
         v_ticket_price,
         p_refund_method,
         'Pending',
         p_reason,
         v_transaction_id
-    );
+    )
+    RETURNING refund_id
+    INTO v_refund_id;
 
-    RAISE NOTICE 'Refund request submitted successfully. Refund ID: %', 
-                 (SELECT refund_id FROM refund WHERE transaction_id = v_transaction_id);
+    RAISE NOTICE
+        'Refund request submitted successfully. Refund ID: %',
+        v_refund_id;
+
 END;
 $$;
