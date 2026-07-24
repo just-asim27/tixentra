@@ -514,6 +514,8 @@ CREATE TABLE refund (
     FOREIGN KEY (transaction_id)
     REFERENCES initial_payment(transaction_id),
 
+    UNIQUE (transaction_id),
+
     CHECK (amount > 0),
 
     CHECK (
