@@ -1,54 +1,8 @@
--- Write your procedures here
-
--- HOW TO RUN (in order, on a fresh database):
---   1. schema/schema.sql
---   2. schema/data_validation_triggers.sql
---   3. organization-module/organization_procedures.sql
---   4. organization-module/organization_functions.sql
---   5. organizer-module/organizer_procedures.sql
---   6. organizer-module/organizer_functions.sql
---   7. buyer-module/buyer_resale_procedures.sql   <-- THIS FILE
---   8. buyer-module/buyer_resale_functions.sql
---   9. buyer-module/buyer_resale_procedure_calls.sql   (demo/sample data)
---  10. buyer-module/buyer_resale_function_calls.sql    (demo/sample data)
---
--- Steps 1-6 are required first because these procedures reference the
--- buyer, ticket, event, ownership_history, resale_listing_history,
--- transaction, resale_payment and buyer_review tables (and their triggers)
--- created by schema.sql / data_validation_triggers.sql, and rely on
--- tickets that only exist once an event has been scheduled through the
--- organization/organizer procedures.
---
--- EXPECTED OUTPUT of running this file: 5x "CREATE PROCEDURE" and nothing
--- else. No data is inserted here - only the 5 procedure definitions below
--- are created/replaced:
---   1. list_ticket_for_resale
---   2. withdraw_resale_listing
---   3. purchase_resale_ticket
---   4. submit_buyer_review
---   5. update_buyer_review
---
--- NOTE ON DEMO DATA (steps 9-10): buyer_resale_procedure_calls.sql seeds
--- its own sample organization, venue, event and buyers. If it is run in
--- the SAME database session where organization_procedure_calls.sql /
--- organization_function_calls.sql (the org module's own demo files) have
--- ALSO been run, some INSERT statements here may raise duplicate-key
--- errors (e.g. duplicate email/seat), because both demo scripts assume a
--- fresh database and create their own independent organization #1,
--- venue #1, event #1, etc. This is only a sample-data naming collision
--- between two separate demo scripts, not a bug in the procedures
--- themselves. Run this file's demo (steps 9-10) on its own fresh
--- database (after steps 1-8) to see a fully clean run.
--- ============================================================================
-
--- Write your procedures here
-
--- 1. List Ticket For Resale
+-- 1. List Ticket for Resale
 
 CREATE OR REPLACE PROCEDURE list_ticket_for_resale(
     p_user_id INTEGER,
-    p_ticket_id INTEGER,
-    p_listed_price NUMERIC
+    p_ticket_id INTEGER
 )
 LANGUAGE plpgsql
 AS $$
@@ -57,7 +11,7 @@ DECLARE
     v_ticket_price NUMERIC;
     v_is_resale_allowed BOOLEAN;
     v_resale_profit_percentage NUMERIC;
-    v_max_allowed_price NUMERIC;
+    v_listed_price NUMERIC;
 BEGIN
 
     IF (
@@ -83,7 +37,7 @@ BEGIN
           AND ticket_id = p_ticket_id
           AND is_current = TRUE
     ) = 0 THEN
-        RAISE EXCEPTION 'You do not currently own this ticket.';
+        RAISE EXCEPTION 'The buyer does not currently own this ticket.';
     END IF;
 
     SELECT
@@ -105,18 +59,7 @@ BEGIN
         RAISE EXCEPTION 'Resale is not permitted for this event.';
     END IF;
 
-    IF p_listed_price <= 0 THEN
-        RAISE EXCEPTION 'Listed price must be greater than zero.';
-    END IF;
-
-    v_max_allowed_price := v_ticket_price
-        * (1 + (v_resale_profit_percentage / 100));
-
-    IF p_listed_price > v_max_allowed_price THEN
-        RAISE EXCEPTION
-            'Listed price exceeds the maximum permitted resale profit margin of %.',
-            v_resale_profit_percentage;
-    END IF;
+    v_listed_price := v_ticket_price + (v_ticket_price * v_resale_profit_percentage / 100);
 
     IF (
         SELECT COUNT(*)
@@ -137,7 +80,7 @@ BEGIN
 
         UPDATE resale_listing_history
         SET
-            listed_price = p_listed_price,
+            listed_price = v_listed_price,
             status = 'Listed',
             listed_at = CURRENT_TIMESTAMP
         WHERE user_id = p_user_id
@@ -154,7 +97,7 @@ BEGIN
         VALUES (
             p_user_id,
             p_ticket_id,
-            p_listed_price,
+            v_listed_price,
             'Listed'
         );
 
@@ -239,8 +182,6 @@ DECLARE
 
     v_transaction_id INTEGER;
 
-    v_owner_check INTEGER;
-
     v_min_age INTEGER;
     v_buyer_dob DATE;
 BEGIN
@@ -280,18 +221,6 @@ BEGIN
         RAISE EXCEPTION 'You cannot purchase your own listed ticket.';
     END IF;
 
-    SELECT 1
-    INTO v_owner_check
-    FROM ownership_history
-    WHERE user_id = v_seller_id
-      AND ticket_id = p_ticket_id
-      AND is_current = TRUE
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Seller no longer owns this ticket.';
-    END IF;
-
     SELECT
         e.organization_id,
         e.org_commission_percentage,
@@ -304,10 +233,6 @@ BEGIN
     JOIN event e
         ON t.event_id = e.event_id
     WHERE t.ticket_id = p_ticket_id;
-
-    -- Even though the ticket was originally booked by someone who met the
-    -- event's minimum age, resale can transfer it to a different buyer, so
-    -- the age requirement must be re-checked against the new buyer here.
 
     IF v_min_age IS NOT NULL THEN
 
@@ -328,6 +253,7 @@ BEGIN
         v_listed_price * (v_commission_percentage / 100),
         2
     );
+
     v_seller_amount := v_listed_price - v_organization_amount;
 
     INSERT INTO transaction (
