@@ -174,19 +174,38 @@ BEGIN
 
     END IF;
 
-    INSERT INTO reservation_history (
-        user_id,
-        ticket_id,
-        expiry_datetime,
-        status
-    )
-    VALUES (
-        p_user_id,
-        p_ticket_id,
-        CURRENT_TIMESTAMP +
-        (v_reservation_expiry_duration * INTERVAL '1 minute'),
-        'Active'
-    );
+    IF (
+        SELECT COUNT(*)
+        FROM reservation_history
+        WHERE user_id = p_user_id
+        AND ticket_id = p_ticket_id
+    ) > 0 THEN
+
+    UPDATE reservation_history
+    SET
+        reservation_datetime = CURRENT_TIMESTAMP,
+        expiry_datetime = CURRENT_TIMESTAMP + (v_reservation_expiry_duration * INTERVAL '1 minute'),
+        status = 'Active'
+    WHERE user_id = p_user_id
+    AND ticket_id = p_ticket_id;
+
+    ELSE
+
+        INSERT INTO reservation_history (
+            user_id,
+            ticket_id,
+            expiry_datetime,
+            status
+        )
+        VALUES (
+            p_user_id,
+            p_ticket_id,
+            CURRENT_TIMESTAMP +
+            (v_reservation_expiry_duration * INTERVAL '1 minute'),
+            'Active'
+        );
+
+    END IF;
 
     UPDATE ticket
     SET status = 'Reserved'
@@ -320,16 +339,35 @@ BEGIN
       AND ticket_id = p_ticket_id
       AND status = 'Active';
 
-    INSERT INTO ownership_history (
-        user_id,
-        ticket_id,
-        is_current
-    )
-    VALUES (
-        p_user_id,
-        p_ticket_id,
-        TRUE
-    );
+    IF (
+        SELECT COUNT(*)
+        FROM ownership_history
+        WHERE user_id = p_user_id
+        AND ticket_id = p_ticket_id
+    ) > 0 THEN
+
+    UPDATE ownership_history
+    SET
+        owned_from = CURRENT_TIMESTAMP,
+        owned_until = NULL,
+        is_current = TRUE
+    WHERE user_id = p_user_id
+    AND ticket_id = p_ticket_id;
+
+    ELSE
+
+        INSERT INTO ownership_history (
+            user_id,
+            ticket_id,
+            is_current
+        )
+        VALUES (
+            p_user_id,
+            p_ticket_id,
+            TRUE
+        );
+
+    END IF;
 
     UPDATE ticket
     SET status = 'Sold'

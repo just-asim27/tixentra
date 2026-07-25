@@ -296,20 +296,39 @@ BEGIN
       AND ticket_id = p_ticket_id
       AND is_current = TRUE;
 
-    INSERT INTO ownership_history (
-        user_id,
-        ticket_id,
-        owned_from,
-        owned_until,
-        is_current
-    )
-    VALUES (
-        p_buyer_id,
-        p_ticket_id,
-        DEFAULT,
-        NULL,
-        TRUE
-    );
+    IF (
+        SELECT COUNT(*)
+        FROM ownership_history
+        WHERE user_id = p_buyer_id
+        AND ticket_id = p_ticket_id
+    ) > 0 THEN
+
+    UPDATE ownership_history
+    SET
+        owned_from = CURRENT_TIMESTAMP,
+        owned_until = NULL,
+        is_current = TRUE
+    WHERE user_id = p_buyer_id
+    AND ticket_id = p_ticket_id;
+
+    ELSE
+
+        INSERT INTO ownership_history (
+            user_id,
+            ticket_id,
+            owned_from,
+            owned_until,
+            is_current
+        )
+        VALUES (
+            p_buyer_id,
+            p_ticket_id,
+            DEFAULT,
+            NULL,
+            TRUE
+        );
+
+    END IF;
 
     UPDATE resale_listing_history
     SET status = 'Sold'
