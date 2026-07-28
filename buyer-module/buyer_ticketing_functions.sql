@@ -12,7 +12,8 @@ RETURNS TABLE (
     venue_name VARCHAR,
     city VARCHAR,
     country VARCHAR,
-    base_price NUMERIC
+    base_price NUMERIC,
+    is_refund_allowed BOOLEAN  -- Added this column
 )
 LANGUAGE plpgsql
 AS $$
@@ -31,14 +32,12 @@ BEGIN
         v.name,
         v.city,
         v.country,
-        e.base_price
-
+        e.base_price,
+        e.is_refund_allowed  -- Added this column
     FROM event e
     JOIN venue v
         ON e.venue_id = v.venue_id
-
     WHERE e.status = 'Scheduled'
-
     ORDER BY e.start_datetime ASC;
 
 END;
