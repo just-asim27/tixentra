@@ -12,7 +12,8 @@ RETURNS TABLE (
     venue_name VARCHAR,
     city VARCHAR,
     country VARCHAR,
-    base_price NUMERIC
+    base_price NUMERIC,
+    is_refund_allowed BOOLEAN
 )
 LANGUAGE plpgsql
 AS $$
@@ -31,7 +32,8 @@ BEGIN
         v.name,
         v.city,
         v.country,
-        e.base_price
+        e.base_price,
+        e.is_refund_allowed
 
     FROM event e
     JOIN venue v

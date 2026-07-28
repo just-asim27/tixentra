@@ -60,6 +60,7 @@ CREATE OR REPLACE PROCEDURE create_event(
     p_base_price NUMERIC,
     p_increment_per_seat_type NUMERIC,
     p_budget NUMERIC,
+    p_is_refund_allowed BOOLEAN,
     p_organization_id INTEGER,
     p_venue_id INTEGER
 )
@@ -103,6 +104,7 @@ BEGIN
         base_price,
         increment_per_seat_type,
         budget,
+        is_refund_allowed,
         organization_id,
         venue_id,
         user_id
@@ -126,6 +128,7 @@ BEGIN
         p_base_price,
         p_increment_per_seat_type,
         p_budget,
+        p_is_refund_allowed,
         p_organization_id,
         p_venue_id,
         NULL
@@ -168,6 +171,7 @@ CREATE OR REPLACE PROCEDURE update_event(
     p_increment_per_seat_type NUMERIC DEFAULT NULL,
 
     p_budget NUMERIC DEFAULT NULL,
+    p_is_refund_allowed BOOLEAN DEFAULT NULL,
 
     p_venue_id INTEGER DEFAULT NULL
 )
@@ -290,6 +294,11 @@ BEGIN
         budget = COALESCE(
             p_budget,
             budget
+        ),
+
+        is_refund_allowed = COALESCE(
+            p_is_refund_allowed,
+            is_refund_allowed
         ),
 
         venue_id = COALESCE(

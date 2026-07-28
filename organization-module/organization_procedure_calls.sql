@@ -106,6 +106,7 @@ CALL create_event(
     p_base_price := 1500.00,
     p_increment_per_seat_type := 200.00,
     p_budget := 800000.00,
+    p_is_refund_allowed := TRUE,
     p_organization_id := 1,
     p_venue_id := 1
 );
@@ -115,7 +116,7 @@ CALL create_event(
     p_description := 'International T20 series match.',
     p_start_datetime := '2026-08-25 18:00:00',
     p_end_datetime := '2026-08-25 22:30:00',
-    p_sale_start_datetime := '2026-08-01 00:00:00',
+    p_sale_start_datetime := '2026-07-01 00:00:00',
     p_sale_end_datetime := '2026-08-24 23:59:59',
     p_offered_payment := 75000.00,
     p_reservation_expiry_duration := 10,
@@ -128,6 +129,7 @@ CALL create_event(
     p_base_price := 2000.00,
     p_increment_per_seat_type := 500.00,
     p_budget := 1500000.00,
+    p_is_refund_allowed := FALSE,
     p_organization_id := 2,
     p_venue_id := 2
 );

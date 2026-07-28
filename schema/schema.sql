@@ -151,6 +151,8 @@ CREATE TABLE event (
     increment_per_seat_type NUMERIC(12,2) NOT NULL,
     
     budget NUMERIC(12,2) NOT NULL,
+
+    is_refund_allowed BOOLEAN NOT NULL,
     
     organization_id INTEGER NOT NULL,
     venue_id INTEGER NOT NULL,

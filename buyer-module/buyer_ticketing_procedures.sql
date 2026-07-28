@@ -396,6 +396,7 @@ DECLARE
     v_ticket_price NUMERIC;
     v_transaction_id INTEGER;
     v_refund_id INTEGER;
+    v_is_refund_allowed BOOLEAN;
 BEGIN
 
     IF (
@@ -433,10 +434,19 @@ BEGIN
     FROM ticket
     WHERE ticket_id = p_ticket_id;
 
-    SELECT start_datetime
-    INTO v_event_start_datetime
+    SELECT
+        start_datetime,
+        is_refund_allowed
+    INTO
+        v_event_start_datetime,
+        v_is_refund_allowed
     FROM event
     WHERE event_id = v_event_id;
+
+    IF NOT v_is_refund_allowed THEN
+    RAISE EXCEPTION
+        'Refunds are not allowed for this event.';
+    END IF;
 
     IF CURRENT_TIMESTAMP >= v_event_start_datetime THEN
         RAISE EXCEPTION
