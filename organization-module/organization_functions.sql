@@ -9,7 +9,10 @@ RETURNS TABLE (
     organizer_email VARCHAR,
     organizer_phone VARCHAR,
     applied_at TIMESTAMP,
-    application_status VARCHAR
+    application_status VARCHAR,
+    previous_collaboration_rating NUMERIC,
+    avg_organization_rating NUMERIC,
+    avg_buyer_rating NUMERIC
 )
 LANGUAGE plpgsql
 AS $$
@@ -31,15 +34,45 @@ BEGIN
         o.email,
         o.phone,
         ah.applied_at,
-        ah.status
+        ah.status,
 
-    FROM organizer o
-    JOIN application_history ah
-        ON o.user_id = ah.user_id
+        (
+            SELECT ROUND(AVG(or1.rating), 2)
+            FROM organization_review or1
+            JOIN event e1
+                ON or1.event_id = e1.event_id
+            WHERE or1.user_id = o.user_id
+            AND e1.organization_id = e.organization_id
+            AND e1.status = 'Completed'
+        ) AS previous_collaboration_rating,
+
+        (
+            SELECT ROUND(AVG(or2.rating), 2)
+            FROM organization_review or2
+            WHERE or2.user_id = o.user_id
+        ) AS avg_organization_rating,
+
+        (
+            SELECT ROUND(AVG(br.rating), 2)
+            FROM buyer_review br
+            JOIN event e2
+                ON br.event_id = e2.event_id
+            WHERE e2.user_id = o.user_id
+        ) AS avg_buyer_rating
+
+        FROM organizer o
+        JOIN application_history ah
+            ON o.user_id = ah.user_id
+        JOIN event e
+            ON ah.event_id = e.event_id
 
     WHERE ah.event_id = p_event_id
 
-    ORDER BY ah.applied_at DESC;
+    ORDER BY
+        previous_collaboration_rating DESC NULLS LAST,
+        avg_organization_rating DESC NULLS LAST,
+        avg_buyer_rating DESC NULLS LAST,
+        ah.applied_at ASC;
 
 END;
 $$;

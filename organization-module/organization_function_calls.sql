@@ -1,79 +1,4 @@
--- 1.1. Sample data for organizers
-
-INSERT INTO organizer (
-    name,
-    email,
-    national_id,
-    password,
-    dob,
-    phone
-)
-VALUES
-(
-    'Ali Hassan',
-    'ali.hassan@email.com',
-    '12345-1234567-1',
-    'AliPass123',
-    '1998-05-14',
-    '0301-1234567'
-),
-(
-    'Ahmed Raza',
-    'ahmed.raza@email.com',
-    '23456-2345678-2',
-    'AhmedPass456',
-    '1997-09-21',
-    '0302-2345678'
-),
-(
-    'Fatima Noor',
-    'fatima.noor@email.com',
-    '34567-3456789-3',
-    'FatimaPass789',
-    '1999-02-10',
-    '0303-3456789'
-);
-
--- 1.2. Sample applications data
-
-INSERT INTO application_history (
-    user_id,
-    event_id,
-    applied_at,
-    status
-)
-VALUES
-(
-    1,
-    1,
-    DEFAULT,
-    'Pending'
-),
-(
-    2,
-    1,
-    DEFAULT,
-    'Pending'
-),
-(
-    3,
-    1,
-    DEFAULT,
-    'Pending'
-),
-(
-    2,
-    2,
-    DEFAULT,
-    'Pending'
-);
-
--- 1.3. Get Event Applications
-
-SELECT *
-FROM get_event_applications(1);
-
--- 2.1. Historical Event Data for Reviews
+-- 1.1. Historical event data
 
 INSERT INTO event (
     title,
@@ -94,11 +19,13 @@ INSERT INTO event (
     base_price,
     increment_per_seat_type,
     budget,
+    is_refund_allowed,
     organization_id,
     venue_id,
     user_id
 )
 VALUES
+
 (
     'Pakistan vs India ODI 2025',
     'Asia Cup 2025 group stage cricket match.',
@@ -118,10 +45,12 @@ VALUES
     1500.00,
     200.00,
     700000.00,
+    TRUE,
     1,
     1,
     1
 ),
+
 (
     'England vs Australia T20 2025',
     'International T20 series cricket match.',
@@ -141,10 +70,12 @@ VALUES
     2000.00,
     500.00,
     1200000.00,
+    FALSE,
     2,
     2,
     2
 ),
+
 (
     'South Africa vs New Zealand ODI 2025',
     'Champions Trophy 2025 one-day international match.',
@@ -164,9 +95,60 @@ VALUES
     1800.00,
     250.00,
     900000.00,
+    TRUE,
     3,
     1,
     3
+),
+
+(
+    'Pakistan Super League Final 2025',
+    'Historic PSL final successfully managed.',
+    '2025-10-05 18:00:00',
+    '2025-10-05 22:30:00',
+    '2025-08-20 00:00:00',
+    '2025-10-04 23:59:59',
+    60000.00,
+    'Completed',
+    15,
+    TRUE,
+    10.00,
+    5.00,
+    5,
+    4,
+    NULL,
+    1700.00,
+    300.00,
+    950000.00,
+    TRUE,
+    1,
+    2,
+    2
+),
+
+(
+    'Champions Trophy Final 2025',
+    'International championship final.',
+    '2025-12-12 17:00:00',
+    '2025-12-12 22:00:00',
+    '2025-10-20 00:00:00',
+    '2025-12-11 23:59:59',
+    65000.00,
+    'Completed',
+    15,
+    TRUE,
+    8.00,
+    4.00,
+    6,
+    5,
+    NULL,
+    2200.00,
+    400.00,
+    1100000.00,
+    FALSE,
+    2,
+    1,
+    1
 );
 
 INSERT INTO sports (
@@ -177,29 +159,18 @@ INSERT INTO sports (
     competition_name
 )
 VALUES
-(
-    3,
-    'Cricket',
-    'Pakistan',
-    'India',
-    'Asia Cup 2025'
-),
-(
-    4,
-    'Cricket',
-    'England',
-    'Australia',
-    'World T20 Series 2025'
-),
-(
-    5,
-    'Cricket',
-    'South Africa',
-    'New Zealand',
-    'Champions Trophy 2025'
-);
 
--- 2.2. Sample Organization Reviews
+(3,'Cricket','Pakistan','India','Asia Cup 2025'),
+
+(4,'Cricket','England','Australia','World T20 Series'),
+
+(5,'Cricket','South Africa','New Zealand','Champions Trophy'),
+
+(6,'Cricket','Lahore Qalandars','Karachi Kings','Pakistan Super League'),
+
+(7,'Cricket','India','Australia','ICC Champions Trophy');
+
+-- 1.2. Sample Organization Reviews
 
 INSERT INTO organization_review (
     rating,
@@ -209,117 +180,158 @@ INSERT INTO organization_review (
     organization_id
 )
 VALUES
+
 (
     5,
-    'Excellent event management and communication throughout the event.',
+    'Outstanding planning and execution throughout the event.',
     1,
     3,
     1
 ),
+
 (
-    4,
-    'Managed the event professionally and handled unexpected situations very well.',
+    3,
+    'The event was completed successfully but communication could be improved.',
     2,
     4,
     2
 ),
+
 (
     5,
-    'Outstanding coordination with players, officials, and event logistics.',
+    'Excellent coordination with all stakeholders.',
     3,
     5,
     3
-);
+),
 
--- 2.3. Get Organizer Reviews
-
-SELECT * FROM get_organizer_reviews(2);
-
--- 3.1. Sample buyer data
-
-INSERT INTO buyer (
-    name,
-    email,
-    national_id,
-    password,
-    dob,
-    phone
-)
-VALUES
 (
-    'Ali Khan',
-    'ali.khan@example.com',
-    '35202-1234567-1',
-    'Ali@123',
-    '2000-05-10',
-    '0300-1234567'
-);
-
--- 3.2. Sample transaction data
-
-INSERT INTO transaction (
-    amount,
-    payment_method,
-    payment_status
-)
-VALUES
-(
-    2200.00,
-    'Card',
-    'Completed'
-);
-
-INSERT INTO initial_payment (
-    transaction_id,
-    organization_id,
-    user_id,
-    ticket_id
-)
-VALUES
-(
-    1,
-    1,
-    1,
+    4,
+    'Reliable organizer with good operational management.',
+    2,
+    6,
     1
+),
+
+(
+    5,
+    'Handled the event exceptionally well despite operational challenges.',
+    1,
+    7,
+    2
 );
 
-UPDATE ticket
-SET status = 'Sold'
-WHERE ticket_id = 1;
+-- 1.3. Sample Buyer Reviews
 
--- 3.3. Sample ownership data
-
-INSERT INTO ownership_history (
+INSERT INTO buyer_review (
+    rating,
+    comment,
     user_id,
-    ticket_id,
-    is_current
+    event_id
 )
 VALUES
+
 (
+    5,
+    'Excellent experience from entry to exit.',
     1,
+    3
+),
+(
+    5,
+    'Everything was professionally managed.',
+    2,
+    3
+),
+(
+    4,
+    'Very enjoyable event with only minor delays.',
+    3,
+    3
+),
+
+(
+    3,
+    'Average experience overall.',
     1,
-    TRUE
+    4
+),
+(
+    4,
+    'Good organization but parking needed improvement.',
+    2,
+    4
+),
+(
+    3,
+    'Long waiting time at the entrance.',
+    3,
+    4
+),
+
+(
+    5,
+    'Outstanding event organization.',
+    1,
+    5
+),
+(
+    5,
+    'One of the best sporting events I have attended.',
+    2,
+    5
+),
+(
+    5,
+    'Excellent crowd management and facilities.',
+    3,
+    5
+),
+
+(
+    4,
+    'Smooth entry and helpful staff.',
+    1,
+    6
+),
+(
+    4,
+    'Well organized from start to finish.',
+    2,
+    6
+),
+(
+    5,
+    'Fantastic atmosphere and management.',
+    3,
+    6
+),
+
+(
+    5,
+    'Excellent logistics and seating arrangements.',
+    1,
+    7
+),
+(
+    4,
+    'Very enjoyable experience.',
+    2,
+    7
+),
+(
+    5,
+    'Everything exceeded expectations.',
+    3,
+    7
 );
 
--- 3.4. Sample refund data
+-- 1.4. Get Event Applications
 
-INSERT INTO refund (
-    amount,
-    refund_method,
-    refund_status,
-    reason,
-    transaction_id
-)
-VALUES
-(
-    2200.00,
-    'Card',
-    'Pending',
-    'Unable to attend the event due to personal reasons.',
-    1
-);
+SELECT *
+FROM get_event_applications(1);
 
--- 3.5. Get Refund Requests
+-- 3. Get Refund Requests
 
 SELECT *
 FROM get_refund_requests(1);
