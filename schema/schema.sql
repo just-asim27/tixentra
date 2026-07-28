@@ -213,6 +213,11 @@ CREATE TABLE event (
 
 );
 
+-- Adding is_refund_allowed field
+
+ALTER TABLE event 
+ADD COLUMN is_refund_allowed BOOLEAN NOT NULL DEFAULT TRUE;
+
 -- 7. Theater Table 
 
 CREATE TABLE theater (
