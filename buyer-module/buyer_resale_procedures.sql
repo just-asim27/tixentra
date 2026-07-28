@@ -2,16 +2,11 @@
 
 CREATE OR REPLACE PROCEDURE list_ticket_for_resale(
     p_user_id INTEGER,
-    p_ticket_id INTEGER
+    p_ticket_id INTEGER,
+    p_listed_price NUMERIC
 )
 LANGUAGE plpgsql
 AS $$
-DECLARE
-    v_event_id INTEGER;
-    v_ticket_price NUMERIC;
-    v_is_resale_allowed BOOLEAN;
-    v_resale_profit_percentage NUMERIC;
-    v_listed_price NUMERIC;
 BEGIN
 
     IF (
@@ -40,26 +35,9 @@ BEGIN
         RAISE EXCEPTION 'The buyer does not currently own this ticket.';
     END IF;
 
-    SELECT
-        t.price,
-        t.event_id,
-        e.is_resale_allowed,
-        e.resale_profit_percentage
-    INTO
-        v_ticket_price,
-        v_event_id,
-        v_is_resale_allowed,
-        v_resale_profit_percentage
-    FROM ticket t
-    JOIN event e
-        ON t.event_id = e.event_id
-    WHERE t.ticket_id = p_ticket_id;
-
-    IF v_is_resale_allowed = FALSE THEN
-        RAISE EXCEPTION 'Resale is not permitted for this event.';
+    IF p_listed_price IS NULL OR p_listed_price <= 0 THEN
+        RAISE EXCEPTION 'Listed price must be greater than zero.';
     END IF;
-
-    v_listed_price := v_ticket_price + (v_ticket_price * v_resale_profit_percentage / 100);
 
     IF (
         SELECT COUNT(*)
@@ -80,7 +58,7 @@ BEGIN
 
         UPDATE resale_listing_history
         SET
-            listed_price = v_listed_price,
+            listed_price = p_listed_price,
             status = 'Listed',
             listed_at = CURRENT_TIMESTAMP
         WHERE user_id = p_user_id
@@ -97,7 +75,7 @@ BEGIN
         VALUES (
             p_user_id,
             p_ticket_id,
-            v_listed_price,
+            p_listed_price,
             'Listed'
         );
 
@@ -174,12 +152,6 @@ DECLARE
     v_seller_id INTEGER;
     v_listed_price NUMERIC;
 
-    v_organization_id INTEGER;
-    v_commission_percentage NUMERIC;
-
-    v_organization_amount NUMERIC;
-    v_seller_amount NUMERIC;
-
     v_transaction_id INTEGER;
 
     v_min_age INTEGER;
@@ -221,14 +193,8 @@ BEGIN
         RAISE EXCEPTION 'You cannot purchase your own listed ticket.';
     END IF;
 
-    SELECT
-        e.organization_id,
-        e.org_commission_percentage,
-        e.min_age
-    INTO
-        v_organization_id,
-        v_commission_percentage,
-        v_min_age
+    SELECT e.min_age
+    INTO v_min_age
     FROM ticket t
     JOIN event e
         ON t.event_id = e.event_id
@@ -249,13 +215,6 @@ BEGIN
 
     END IF;
 
-    v_organization_amount := ROUND(
-        v_listed_price * (v_commission_percentage / 100),
-        2
-    );
-
-    v_seller_amount := v_listed_price - v_organization_amount;
-
     INSERT INTO transaction (
         amount,
         payment_method,
@@ -271,18 +230,12 @@ BEGIN
 
     INSERT INTO resale_payment (
         transaction_id,
-        organization_amount,
-        seller_amount,
-        organization_id,
         ticket_id,
         buyer_id,
         seller_id
     )
     VALUES (
         v_transaction_id,
-        v_organization_amount,
-        v_seller_amount,
-        v_organization_id,
         p_ticket_id,
         p_buyer_id,
         v_seller_id

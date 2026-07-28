@@ -2,7 +2,8 @@
 
 CALL list_ticket_for_resale(
     p_user_id := 1,
-    p_ticket_id := 1
+    p_ticket_id := 1,
+    p_listed_price := 150.00
 );
 
 SELECT * FROM resale_listing_history;
