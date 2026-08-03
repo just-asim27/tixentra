@@ -85,6 +85,23 @@ BEGIN
             'Maximum bookings cannot exceed the venue capacity.';
     END IF;
 
+    IF (
+        SELECT COUNT(*)
+        FROM event e
+        WHERE e.venue_id = p_venue_id
+        AND e.status IN (
+            'Application_Open',
+            'Application_Closed',
+            'Scheduled',
+            'Active'
+        )
+        AND e.start_datetime < p_end_datetime
+        AND e.end_datetime > p_start_datetime
+    ) > 0 THEN
+    RAISE EXCEPTION
+        'Another event is already scheduled at the selected venue during the specified time.';
+    END IF;
+
     INSERT INTO event (
         title,
         description,
@@ -231,6 +248,23 @@ BEGIN
     THEN
         RAISE EXCEPTION
             'Maximum bookings cannot exceed the venue capacity.';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM event e
+        WHERE e.venue_id = p_venue_id
+        AND e.status IN (
+            'Application_Open',
+            'Application_Closed',
+            'Scheduled',
+            'Active'
+        )
+        AND e.start_datetime < p_end_datetime
+        AND e.end_datetime > p_start_datetime
+    ) > 0 THEN
+    RAISE EXCEPTION
+        'Another event is already scheduled at the selected venue during the specified time.';
     END IF;
 
     UPDATE event
